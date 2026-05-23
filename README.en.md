@@ -157,7 +157,7 @@ It also **quietly remembers you** (a big step in v1.2.13): it records what apps 
 
 ### 🎨 And a pile of nice little details
 
-Full **Markdown** render (GFM tables + numbered lists → clickable cards + code blocks with "copied" feedback) · **Pin** any AI reply to the desktop · **Quick-ask** (`⌘⇧Space`, Spotlight-style) without opening the chat window · **input bar strictly follows Apple HIG** (Capsule + iMessage feel) · **5 chat font sizes** (`⌘+` / `⌘-` / `⌘0`) · **window pinning toggle** · **optional Dock icon** (defaults to menubar-agent style) · **5 event sounds** each togglable + custom audio drop-in.
+Full **Markdown** render (GFM tables + numbered lists → clickable cards + code blocks with "copied" feedback) · **Pin** any AI reply to the desktop · **Quick-ask, redesigned (v1.2.14)** (`⌘⇧Space`, Spotlight-style) without opening the chat window — now with an iOS 26 liquid-glass look, and you can **select any screen region to OCR its text** for the AI · **paste images straight into chat** · **context-usage bar** so you always know how much room is left this turn · **input bar strictly follows Apple HIG** (Capsule + iMessage feel) · **5 chat font sizes** (`⌘+` / `⌘-` / `⌘0`) · **window pinning toggle** · **optional Dock icon** (defaults to menubar-agent style) · **5 event sounds** each togglable + custom audio drop-in.
 
 ---
 
