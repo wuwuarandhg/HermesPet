@@ -132,7 +132,7 @@ The capsule below the notch is the **heart** of HermesPet:
 
 **Push-to-talk from any app (`⌘⇧V`)**: an **Apple Intelligence-style colorful glow** appears at the screen edge + the right ear pulses a red microphone + a live transcript shows below the island. Speech uses **SFSpeechRecognizer** (macOS offline model); release to auto-send, with a "ding" when the AI finishes.
 
-**Drag files to AI · AI reads them on demand**: instead of stuffing the whole PDF into context, HermesPet appends the **absolute path** to the prompt and lets Claude / Codex **read just the pages they need** with their own Read / Bash tools — saving context, tokens, and time. Images support four input paths: **clipboard paste / drag / `⌘⇧J` screenshot / Codex direct generation**.
+**Drag files to AI · AI reads them on demand**: instead of stuffing the whole PDF into context, HermesPet appends the **absolute path** to the prompt and lets Claude / Codex **read just the pages they need** with their own Read / Bash tools — saving context, tokens, and time. **The online AI can now read PDFs too (new in v1.2.15)**: drop a PDF into chat and it can read, summarize, and answer from it — scanned / photographed PDFs are OCR'd automatically. Images support four input paths: **clipboard paste / drag / `⌘⇧J` screenshot / Codex direct generation**.
 
 **Multi-conversation · cross-AI shared context (signature feature)**: up to **8 conversations** at once (`⌘N` new / `⌘[` `⌘]` switch / `⌘1`~`⌘8` jump), each independently bound to a mode with zero cross-contamination; **switching a conversation's mode passes the entire history to the new model** — Claude can keep going from what Hermes was discussing, and vice versa.
 
