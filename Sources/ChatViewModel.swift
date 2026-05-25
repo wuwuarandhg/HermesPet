@@ -499,12 +499,6 @@ final class ChatViewModel {
         }
     }
 
-    nonisolated deinit {
-        Task { @MainActor [weak self] in
-            self?.statusTimer?.invalidate()
-        }
-    }
-
     // MARK: - Status Polling
 
     enum ConnectionStatus {

@@ -723,12 +723,14 @@ struct SettingsView: View {
     /// 1s tick 重渲染 Gateway 状态卡片（spawn 进度可视化）
     private func startGatewayStatusTimer() {
         Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
-            // 离开当前 mode 就停（避免后台一直 tick）
-            if selectedHermesPreset.id != "hermes-local" {
-                timer.invalidate()
-                return
+            Task { @MainActor in
+                // 离开当前 mode 就停（避免后台一直 tick）
+                if selectedHermesPreset.id != "hermes-local" {
+                    timer.invalidate()
+                    return
+                }
+                gatewayStatusTick &+= 1
             }
-            gatewayStatusTick &+= 1
         }
     }
 
