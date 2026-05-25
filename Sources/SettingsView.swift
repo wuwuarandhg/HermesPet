@@ -8,6 +8,7 @@ import UniformTypeIdentifiers
 /// - 5 类：AI 后端 / 桌宠 / 音效 / 系统 / 关于
 struct SettingsView: View {
     @Bindable var viewModel: ChatViewModel
+    private let gatewayStatusTimer = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()
 
     @State private var selectedCategory: Category = .backend
     @State private var showKey = false
@@ -394,8 +395,10 @@ struct SettingsView: View {
         )
         // 1s tick 刷新 status（spawn 中的状态变化通过 @State 重新读 manager）
         .id(gatewayStatusTick)
-        .onAppear {
-            startGatewayStatusTimer()
+        .onReceive(gatewayStatusTimer) { _ in
+            // 离开本地 Hermes 档就不刷新（避免后台一直 tick）
+            guard selectedHermesPreset.id == "hermes-local" else { return }
+            gatewayStatusTick &+= 1
         }
     }
 
@@ -549,8 +552,8 @@ struct SettingsView: View {
                 .stroke(fomoTint.opacity(0.35), lineWidth: 0.5)
         )
         .id(gatewayStatusTick)
-        .onAppear {
-            startGatewayStatusTimer()
+        .onReceive(gatewayStatusTimer) { _ in
+            gatewayStatusTick &+= 1
         }
     }
 
@@ -717,20 +720,6 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .truncationMode(.tail)
-        }
-    }
-
-    /// 1s tick 重渲染 Gateway 状态卡片（spawn 进度可视化）
-    private func startGatewayStatusTimer() {
-        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
-            Task { @MainActor in
-                // 离开当前 mode 就停（避免后台一直 tick）
-                if selectedHermesPreset.id != "hermes-local" {
-                    timer.invalidate()
-                    return
-                }
-                gatewayStatusTick &+= 1
-            }
         }
     }
 
