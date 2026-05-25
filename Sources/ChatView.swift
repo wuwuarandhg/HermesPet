@@ -333,6 +333,7 @@ struct ChatView: View {
     private var messagesView: some View {
         ScrollViewReader { proxy in
             GeometryReader { viewport in
+                let viewportHeight = viewport.size.height
                 ScrollView {
                     LazyVStack(spacing: 10) {
                         // 新对话欢迎页：精致的 WelcomeView 替代纯文字欢迎语
@@ -419,8 +420,10 @@ struct ChatView: View {
                 }
                 .coordinateSpace(name: Self.messagesScrollSpace)
                 .onPreferenceChange(MessagesBottomYPreferenceKey.self) { bottomY in
-                    let distanceToBottom = bottomY - viewport.size.height
-                    isMessagesNearBottom = distanceToBottom < 72
+                    let nearBottom = (bottomY - viewportHeight) < 72
+                    Task { @MainActor in
+                        isMessagesNearBottom = nearBottom
+                    }
                 }
                 .onAppear {
                     scrollToBottom(proxy, animated: false)

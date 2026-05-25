@@ -2258,20 +2258,21 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - 显示模式（灵动岛 / 悬浮胶囊 切换）
+    // MARK: - 显示模式（顶部胶囊 / 菜单栏 切换）
 
     private var displayModeRow: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Image(systemName: "macbook.gen2")
                     .foregroundStyle(.purple)
-                Text("灵动岛显示")
+                Text("顶部入口")
                     .font(.system(size: 13, weight: .medium))
                 Spacer()
             }
 
-            Picker("灵动岛显示", selection: $displayModeRaw) {
+            Picker("顶部入口", selection: $displayModeRaw) {
                 Text("跟随屏幕").tag(DisplayMode.auto.rawValue)
+                Text("菜单栏").tag(DisplayMode.menuBar.rawValue)
                 Text("刘海").tag(DisplayMode.notch.rawValue)
                 Text("悬浮胶囊").tag(DisplayMode.floating.rawValue)
             }
@@ -2281,7 +2282,7 @@ struct SettingsView: View {
                 pendingRestartFromDisplayMode = true
             }
 
-            Text("无刘海屏（Air / Intel Mac / 外接显示器）建议选「悬浮胶囊」，胶囊会浮在菜单栏下方 + 跟当前桌宠主色发光。切换后需要重启应用生效。")
+            Text("无刘海屏默认使用「菜单栏」入口，不再显示顶部中央灵动岛 / 悬浮胶囊；有刘海屏仍可跟随屏幕显示刘海胶囊。切换后需要重启应用生效。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -2294,7 +2295,7 @@ struct SettingsView: View {
                 relaunchApp()
             }
         } message: {
-            Text("灵动岛显示模式切换需要重启应用才能生效。")
+            Text("顶部入口显示模式切换需要重启应用才能生效。")
         }
     }
 

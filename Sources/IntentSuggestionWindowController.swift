@@ -31,9 +31,8 @@ final class IntentSuggestionWindowController {
 
     /// 卡片宽度 = 灵动岛宽度 + idleExtra
     private var cardWidth: CGFloat {
-        let screen = HermesIslandGeometry.targetScreen()
-        let core: CGFloat = screen.map { HermesIslandGeometry.islandCoreWidth(on: $0) } ?? 200
-        return core + 80
+        guard let screen = HermesIslandGeometry.targetScreen() else { return 280 }
+        return HermesIslandGeometry.cardWidth(on: screen)
     }
     private let cardHeight: CGFloat = 140
     private let topGap: CGFloat = 10
@@ -175,10 +174,9 @@ final class IntentSuggestionWindowController {
 
     private func positionUnderIsland() {
         guard let screen = HermesIslandGeometry.targetScreen() else { return }
-        let notchCenterX = HermesIslandGeometry.islandCenterX(on: screen)
         let cardTopY = HermesIslandGeometry.islandBottomY(on: screen)
                      - HermesIslandGeometry.cardTopGapBelowIsland(on: screen)
-        let x = notchCenterX - cardWidth / 2
+        let x = HermesIslandGeometry.cardOriginX(on: screen, width: cardWidth)
         let y = cardTopY - cardHeight - topGap
         window.setFrame(NSRect(x: x, y: y, width: cardWidth, height: cardHeight), display: false)
     }

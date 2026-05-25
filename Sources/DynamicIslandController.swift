@@ -246,6 +246,7 @@ final class DynamicIslandController {
             switch effectiveMode {
             case .notch:    return hasNotch ? safeArea.top : 28
             case .floating: return 28
+            case .menuBar:  return 28
             }
         }()
         // 缓存给 computeHitRectInScreen 用（NSEvent monitor 自检 hit area 时算屏幕坐标）

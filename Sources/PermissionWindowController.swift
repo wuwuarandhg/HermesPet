@@ -39,17 +39,8 @@ final class PermissionWindowController {
     /// 左右。用户在截图标"-24pt"要把这个凸出消掉。
     /// 现在 computed 每次访问从 NSScreen 实时算 + 严格等于 NSWindow 宽度（不加 +10 视觉补偿）
     private var cardWidth: CGFloat {
-        let screen = NSScreen.screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? NSScreen.main
-        let actualNotchWidth: CGFloat = {
-            guard let screen = screen,
-                  let left = screen.auxiliaryTopLeftArea,
-                  let right = screen.auxiliaryTopRightArea else {
-                return 200   // 兜底：14" MacBook Pro 默认
-            }
-            return right.minX - left.maxX
-        }()
-        let idleExtraWidth: CGFloat = 80
-        return actualNotchWidth + idleExtraWidth
+        guard let screen = HermesIslandGeometry.targetScreen() else { return 280 }
+        return HermesIslandGeometry.cardWidth(on: screen)
     }
     /// 卡片高度。动态根据 PermissionRequest 类型预设：
     /// - Diff (Edit/Write): 290pt（5 行 new + 3 行 old + 统计 + 按钮区）
@@ -197,11 +188,10 @@ final class PermissionWindowController {
         guard let screen = HermesIslandGeometry.targetScreen() else { return }
 
         // 灵动岛中心 x + 灵动岛底部 y（floating 模式自然下移 8pt）
-        let notchCenterX = HermesIslandGeometry.islandCenterX(on: screen)
         let cardTopY = HermesIslandGeometry.islandBottomY(on: screen)
                      - HermesIslandGeometry.cardTopGapBelowIsland(on: screen)
 
-        let x = notchCenterX - cardWidth / 2
+        let x = HermesIslandGeometry.cardOriginX(on: screen, width: cardWidth)
         let y = cardTopY - cardHeight
 
         window.setFrame(

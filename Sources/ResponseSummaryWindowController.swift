@@ -39,17 +39,8 @@ final class ResponseSummaryWindowController {
 
     /// 卡片宽度 = 灵动岛实际 NSWindow 宽度，computed 每次读 NSScreen（决策 #16 经验）
     private var cardWidth: CGFloat {
-        let screen = NSScreen.screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? NSScreen.main
-        let actualNotchWidth: CGFloat = {
-            guard let screen = screen,
-                  let left = screen.auxiliaryTopLeftArea,
-                  let right = screen.auxiliaryTopRightArea else {
-                return 200
-            }
-            return right.minX - left.maxX
-        }()
-        let idleExtraWidth: CGFloat = 80
-        return actualNotchWidth + idleExtraWidth
+        guard let screen = HermesIslandGeometry.targetScreen() else { return 280 }
+        return HermesIslandGeometry.cardWidth(on: screen)
     }
     /// 固定卡片高度 240pt（200 字摘要 + header + 按钮）
     private let cardHeight: CGFloat = 240
@@ -246,12 +237,11 @@ final class ResponseSummaryWindowController {
     private func positionUnderIsland() {
         guard let screen = HermesIslandGeometry.targetScreen() else { return }
 
-        let notchCenterX = HermesIslandGeometry.islandCenterX(on: screen)
         let cardTopY = HermesIslandGeometry.islandBottomY(on: screen)
                      - HermesIslandGeometry.cardTopGapBelowIsland(on: screen)
 
-        let x = notchCenterX - cardWidth / 2
-        // 卡片顶部再下移 topGap (10pt) 让灵动岛和摘要卡之间有视觉间隔，独立感更强
+        let x = HermesIslandGeometry.cardOriginX(on: screen, width: cardWidth)
+        // 卡片顶部再下移 topGap (10pt) 让顶部入口和摘要卡之间有视觉间隔，独立感更强
         let y = cardTopY - cardHeight - topGap
 
         window.setFrame(

@@ -123,20 +123,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 聊天窗口（可拖拽调整大小）
         chatWindow = ChatWindowController(viewModel: vm)
 
-        // 灵动岛胶囊
-        let island = DynamicIslandController()
-        island.show()
-        island.onTapped = { [weak self] in
-            // 错误态（连接断开）下点击灵动岛 → 顺便重新检测一次连接，再打开聊天
-            if let vm = self?.viewModel,
-               case .disconnected = vm.connectionStatus {
-                vm.checkConnection()
+        // 顶部入口模式：有刘海屏保留灵动岛；无刘海屏默认只保留菜单栏入口。
+        let shouldShowTopIsland = HermesIslandGeometry.targetScreen()
+            .map { HermesIslandGeometry.shouldShowTopIsland(on: $0) } ?? false
+        if shouldShowTopIsland {
+            let island = DynamicIslandController()
+            island.show()
+            island.onTapped = { [weak self] in
+                // 错误态（连接断开）下点击顶部胶囊 → 顺便重新检测一次连接，再打开聊天
+                if let vm = self?.viewModel,
+                   case .disconnected = vm.connectionStatus {
+                    vm.checkConnection()
+                }
+                self?.toggleChatWindow()
             }
-            self?.toggleChatWindow()
+            self.islandController = island
         }
-        self.islandController = island
 
-        // Permission UI 独立窗口 —— 监听 NotificationCenter 自驱，独立于灵动岛 NSWindow
+        // Permission UI 独立窗口 —— 监听 NotificationCenter 自驱，独立于顶部入口 NSWindow
         self.permissionWindowController = PermissionWindowController()
 
         // 任务回复摘要卡片 —— 监听 HermesPetResponseReady 自驱（v1.2.7-dev）
@@ -176,7 +180,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.target = self
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
-        island.setStatusItem(item)
+        islandController?.setStatusItem(item)
         statusItem = item
 
         // 快问浮窗 controller 绑定 ViewModel + 聊天窗，便于"转聊天窗"按钮联动
