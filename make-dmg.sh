@@ -261,8 +261,14 @@ EOF
 }
 
 # 跑两次：AppleSilicon 用 darwin-arm64，Intel 用 darwin-x64
+# 环境变量 SKIP_INTEL=1 时只打 AppleSilicon（CI / 仅分发 Apple Silicon 场景）
 build_one_dmg "AppleSilicon" "darwin-arm64"
-build_one_dmg "Intel"        "darwin-x64"
+if [ "${SKIP_INTEL:-0}" = "1" ]; then
+    echo ""
+    echo "⏭️  SKIP_INTEL=1，跳过 Intel 版构建"
+else
+    build_one_dmg "Intel"        "darwin-x64"
+fi
 
 echo ""
 echo "═══════════════════════════════════════════════"

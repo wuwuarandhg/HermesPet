@@ -1,0 +1,209 @@
+name: Release DMG
+
+# ── 触发场景 ──────────────────────────────────────────────────────────
+# 1. 推 tag `v*`（如 v1.2.15）→ 自动构建 + 创建 GitHub Release + 上传两份 DMG
+# 2. 手动触发（workflow_dispatch）→ 只构建并上传到 Actions Artifacts，不发 Release
+#    适合在合并前预览 DMG 是否能打出来
+# ────────────────────────────────────────────────────────────────────
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release:
+        description: '是否创建 GitHub Release（仅当 tag 推送时自动为 true）'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+# 同名 workflow 并发触发时，新的取消旧的（节省 CI 分钟数）
+concurrency:
+  group: release-dmg-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write   # 创建 Release / 上传 asset 需要
+
+jobs:
+  build:
+    name: Build Universal DMG
+    # ── Runner 与本地开发机对齐 ─────────────────────────────────────────
+    # 本地：macOS 15.2 (Sequoia) + Swift 6.0.3 (Xcode 16.2)
+    # 选 macos-15（Sequoia，Apple Silicon）跟本地大版本同代，避免 SDK 差异
+    # 触发 swift build --arch arm64 --arch x86_64 出 universal binary 没问题
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      # ── 1. checkout 源码 ──────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # tag 推送时拿不到默认 fetch-depth=1 的完整历史，
+          # 如果未来要 generate-release-notes 从 commit log 抽内容，需 0
+          fetch-depth: 0
+
+      # ── 2. 选 Xcode 版本 ─────────────────────────────────────────
+      # 跟本地 Swift 6.0.3 严格对齐 → 必须 Xcode 16.2（自带 Swift 6.0.3）
+      # universal build (`--arch arm64 --arch x86_64`) 需完整 Xcode 的 xcbuild
+      # 优先级：Xcode_16.2 → 任意 Xcode_16.x → runner 默认
+      - name: Select Xcode 16.2 (Swift 6.0.3, 与本地一致)
+        run: |
+          # 1) 首选精确匹配本地的 Xcode 16.2
+          if [ -d "/Applications/Xcode_16.2.app" ]; then
+            XCODE_PATH="/Applications/Xcode_16.2.app"
+          else
+            # 2) 退而求其次：取 runner 上最新的 Xcode 16.x（仍是 Swift 6.0.x ABI 兼容）
+            XCODE_PATH=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1 || true)
+          fi
+
+          if [ -n "$XCODE_PATH" ] && [ -d "$XCODE_PATH" ]; then
+            sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+            echo "✅ Using: $XCODE_PATH"
+          else
+            echo "::warning::未找到 Xcode 16.x，使用 runner 默认版本（Swift 版本可能与本地 6.0.3 不一致）"
+          fi
+
+          echo ""
+          echo "── 实际生效版本 ──"
+          xcodebuild -version
+          swift --version
+          echo ""
+          # 显式 sanity check：Swift 至少要 6.0+（Package.swift 要求 swift-tools-version 6.0）
+          SWIFT_MAJOR=$(swift --version 2>&1 | grep -oE 'Swift version [0-9]+' | awk '{print $NF}' | head -1)
+          if [ -z "$SWIFT_MAJOR" ] || [ "$SWIFT_MAJOR" -lt 6 ]; then
+            echo "::error::Swift 主版本 < 6，Package.swift 要求 swift-tools-version 6.0，构建会失败"
+            exit 1
+          fi
+
+      # ── 3. 读 Info.plist 版本号 → 输出到环境 ──────────────────
+      # tag 推送时也会同时校验 tag 是否跟 Info.plist 一致（避免漂移）
+      - name: Read version from Info.plist
+        id: version
+        run: |
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)
+          BUILD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Info.plist)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
+          echo "📌 Info.plist 版本：v${VERSION} (build ${BUILD})"
+
+          # tag 触发时校验：tag 名（去掉 v 前缀）必须等于 plist 版本
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            TAG_VERSION="${GITHUB_REF_NAME#v}"
+            if [ "$TAG_VERSION" != "$VERSION" ]; then
+              echo "::error::tag ${GITHUB_REF_NAME} 与 Info.plist 版本 v${VERSION} 不一致"
+              exit 1
+            fi
+          fi
+
+      # ── 4. 缓存 opencode runtime（每个版本 ~66MB，两份共 130MB+）─
+      # cache key 锁到 make-dmg.sh 里硬编码的 OPENCODE_VERSION（v1.15.1）
+      # 升级时改 make-dmg.sh 里的版本号，cache 会自动 miss 并重下
+      - name: Cache opencode runtime
+        uses: actions/cache@v4
+        with:
+          path: .opencode-cache
+          key: opencode-${{ runner.os }}-${{ hashFiles('make-dmg.sh') }}
+          restore-keys: |
+            opencode-${{ runner.os }}-
+
+      # ── 5. 缓存 SwiftPM 编译产物（首次冷构建 8-15min，缓存命中 3-5min）─
+      # cache key 加上 Xcode 版本，避免 runner 升级 Xcode 后命中老 cache 出诡异链接错误
+      - name: Resolve Xcode version for cache key
+        id: xcode_ver
+        run: |
+          XCODE_VER=$(xcodebuild -version | head -1 | awk '{print $2}')
+          echo "ver=${XCODE_VER}" >> "$GITHUB_OUTPUT"
+          echo "Xcode for cache: ${XCODE_VER}"
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/Library/Caches/org.swift.swiftpm
+          key: swiftpm-${{ runner.os }}-xcode${{ steps.xcode_ver.outputs.ver }}-${{ hashFiles('Package.swift', 'Sources/**/*.swift') }}
+          restore-keys: |
+            swiftpm-${{ runner.os }}-xcode${{ steps.xcode_ver.outputs.ver }}-
+            swiftpm-${{ runner.os }}-
+
+      # ── 6. 调 make-dmg.sh 出 AppleSilicon DMG ─────────────────────
+      # ad-hoc 签名（脚本内部 `codesign --sign -`）→ 不需要 secrets，
+      # 用户首次打开 DMG 走右键打开走 Gatekeeper 例外
+      # SKIP_INTEL=1 跳过 Intel 版（CI 只发 AppleSilicon；本地 ./make-dmg.sh 仍出双份）
+      - name: Build AppleSilicon DMG
+        env:
+          SKIP_INTEL: '1'
+        run: |
+          chmod +x make-dmg.sh
+          ./make-dmg.sh
+
+      # ── 7. 检查产物 ─────────────────────────────────────────────
+      - name: List artifacts
+        run: |
+          echo "📦 生成的 DMG："
+          ls -lh dist/*.dmg
+          # 计算 SHA256 用于 release notes
+          cd dist
+          for dmg in *.dmg; do
+            sha=$(shasum -a 256 "$dmg" | awk '{print $1}')
+            echo "${dmg}: ${sha}" | tee -a checksums.txt
+          done
+
+      # ── 8. 上传到 Actions Artifacts（手动触发场景下唯一交付物）──
+      - name: Upload to workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: HermesPet-${{ steps.version.outputs.version }}
+          path: |
+            dist/*.dmg
+            dist/checksums.txt
+          retention-days: 14
+          if-no-files-found: error
+
+      # ── 9. tag 触发场景 → 创建/更新 GitHub Release ─────────────
+      # 手动触发时只有勾选 inputs.release=true 才会发 Release（防止误操作覆盖）
+      - name: Create GitHub Release
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.release == 'true')
+        uses: softprops/action-gh-release@v2
+        with:
+          # tag 触发时复用 tag 名；手动触发时按 plist 版本号现造一个（带 -manual 后缀防撞已有 tag）
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}-manual-{1}', steps.version.outputs.version, github.run_number) }}
+          name: HermesPet v${{ steps.version.outputs.version }}
+          draft: false
+          # 预发：tag 含 -alpha / -beta / -rc 自动标 prerelease
+          prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
+          generate_release_notes: true
+          body: |
+            ## HermesPet v${{ steps.version.outputs.version }} (build ${{ steps.version.outputs.build }})
+
+            macOS 顶部刘海桌宠 + AI 聊天客户端。
+
+            ### 下载
+
+            **Apple Silicon (M1/M2/M3/M4)**：`HermesPet-${{ steps.version.outputs.version }}-AppleSilicon.dmg`
+
+            > 本 release 仅提供 Apple Silicon 版。Intel 用户请本地 clone 仓库后 `./make-dmg.sh` 自行编译。
+
+            ### 首次打开
+
+            DMG 是 ad-hoc 签名（没办 Apple Developer Program），需走一次 Gatekeeper 例外：
+
+            1. 把「Hermes 桌宠」拖到「应用程序」
+            2. 启动台找到 → **右键 → 打开** → 弹窗再点「打开」
+            3. 若还被拦：系统设置 → 隐私与安全性 → 底部「仍要打开」
+
+            完成一次后可正常双击启动。
+
+            ### 完整变更
+
+            见下方 auto-generated release notes。
+          files: |
+            dist/*.dmg
+            dist/checksums.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
