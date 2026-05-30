@@ -8,8 +8,11 @@
 
 **An AI chat client living under your MacBook's notch · 5 parallel engines · 5 pixel pets keeping you company**
 
+<sub>🆕 **Windows early-access build is here** — the desktop AI companion now comes to Windows too</sub>
+
 [![Website](https://img.shields.io/badge/website-hermespet.cc-7B68EE?logo=safari&logoColor=white)](https://hermespet.cc)
 [![macOS](https://img.shields.io/badge/macOS-14.0+-000000?logo=apple&logoColor=white)](https://www.apple.com/macos/)
+[![Windows](https://img.shields.io/badge/Windows-10/11_early--access-0078D4?logo=windows&logoColor=white)](https://github.com/basionwang-bot/HermesPet/releases/tag/win-v0.1.0)
 [![Swift](https://img.shields.io/badge/Swift-6.0-F05138?logo=swift&logoColor=white)](https://www.swift.org/)
 [![Latest Release](https://img.shields.io/github/v/release/basionwang-bot/HermesPet?label=latest&color=success&logo=github)](https://github.com/basionwang-bot/HermesPet/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/basionwang-bot/HermesPet/total?label=downloads&color=blue)](https://github.com/basionwang-bot/HermesPet/releases)
@@ -17,13 +20,15 @@
 
 🌍 [中文](./README.md) · **English**
 
-### 📦 [Download the latest DMG →](https://github.com/basionwang-bot/HermesPet/releases/latest)
+### 🍎 [macOS download (DMG) →](https://github.com/basionwang-bot/HermesPet/releases/latest) · 🪟 [Windows early-access (exe) →](https://github.com/basionwang-bot/HermesPet/releases/tag/win-v0.1.0)
 
 ### 🌐 [Visit the project site · hermespet.cc →](https://hermespet.cc)
 
-Grab the macOS DMG · **double-click to install and open** (Apple-notarized) · pick a provider, paste an API key — **no command-line tools required**
+macOS: grab the DMG · **double-click to install and open** (Apple-notarized) · pick a provider, paste an API key — **no command-line tools required**
 
 <sub>💡 Prefer the official signed DMG above (no build needed, double-click to run) · 🤖 AI agents: see [AGENTS.md](AGENTS.md)</sub>
+
+<sub>🪟 Windows is an **early-access build**: multi-model chat, the desktop pixel monster, push-to-talk, and the read/write-files & run-commands tools all work today — more features are being brought to parity. If Windows blocks the first launch, click "More info → Run anyway".</sub>
 
 </div>
 
@@ -78,6 +83,8 @@ HermesPet is an AI chat client + desktop companion that lives **right below your
 Tap the notch to summon the chat window, hold `⌘⇧V` to talk, drop files onto the little pet, watch fomo the nine-tailed fox wander your desktop, see the Dynamic Island draw a Face ID-style checkmark ✓ when the AI is done — **desktop AI should feel alive**. The entire interface now ships in **English / 中文 with instant in-app switching**.
 
 > Swift 6 · SwiftUI · macOS 14+ · Pure native (no Electron / no Web view) · Apache-2.0 open source
+>
+> 🪟 **Windows early-access**: rebuilt in Electron + TypeScript — a desktop AI companion that lives at the top of your screen. Multi-model chat, the desktop pixel monster, push-to-talk, and read/write-files & run-commands tools all work today; more features are being brought to parity with macOS.
 
 ---
 
@@ -135,6 +142,20 @@ The capsule below the notch is the **heart** of HermesPet:
 **Drag files to AI · AI reads them on demand**: instead of stuffing the whole PDF into context, HermesPet appends the **absolute path** to the prompt and lets Claude / Codex **read just the pages they need** with their own Read / Bash tools — saving context, tokens, and time. **The online AI can now read PDFs too (new in v1.2.15)**: drop a PDF into chat and it can read, summarize, and answer from it — scanned / photographed PDFs are OCR'd automatically. Images support four input paths: **clipboard paste / drag / `⌘⇧J` screenshot / Codex direct generation**.
 
 **Multi-conversation · cross-AI shared context (signature feature)**: up to **8 conversations** at once (`⌘N` new / `⌘[` `⌘]` switch / `⌘1`~`⌘8` jump), each independently bound to a mode with zero cross-contamination; **switching a conversation's mode passes the entire history to the new model** — Claude can keep going from what Hermes was discussing, and vice versa.
+
+### 🌌 Knowledge Nebula · a universe of conversations you never lose (NEW in v1.3.0 · the killer feature)
+
+Other AI clients hand you a sidebar list that only grows **longer and more exhausting**. HermesPet gives you a **living, breathing galaxy**.
+
+Hit **`⌘⇧G`** and a full-screen Knowledge Nebula floats up from your desktop — **every conversation is a glowing star**, brighter and bigger the deeper you went; similar topics get **pulled into clusters by keyword gravity** (fitness, travel, code, that bug you fought for three days…), each cluster labeled at its core so you see at a glance *what you've actually been talking about with your AI*. Sweep over a star and **only its links light up** while the rest fade into deep space; click it to **jump straight back into that conversation**. Liquid-glass depth, mode-color glow, a bloom-open entrance — this isn't a chat list, it's **the first time the things you and your AI thought through together are drawn as a map**.
+
+Underneath, three hard features ship together:
+
+- **🗂 Conversations never lost**: every chat lands in a **permanent local store** (`history.sqlite`, separate from the working set, never auto-deleted). You used to lose the oldest once 8 chats were open — now they're **all there**, browsable and keyword-searchable (local tokenizer; *"that one where we debugged the crash"* still finds it).
+- **🧠 It learns you over time**: long-term cross-conversation memory **auto-revises while you're idle**, so it still understands you no matter which engine you switch to — no re-explaining your context every time.
+- **⭐ Star to pin + 🗄 auto-archive**: star an important chat and it turns **bigger, gold-rimmed, never buried** in the nebula; chats untouched for 90+ days **quietly sink into the archive** (not deleted — recall anytime). The more data you accrue, the cleaner it stays — **store ten thousand, see only what matters**.
+
+> Fully local, zero upload. Those "revisit / star / salience" signals make HermesPet understand your rhythm the more you use it — and the final say is always yours.
 
 ### 📋 AI task planner & dispatch · 📰 Cross-day memory + daily companion
 
@@ -278,7 +299,9 @@ HermesPet is currently a one-person open-source project. Every issue / PR / star
 - 🛠 **Want to send a PR**: open an issue first to chat about direction — saves us both time. No strict style guide, just match the surrounding files
 - ⭐ **Like the project**: a Star or a share with someone who'd like it goes a long way — getting this in front of more people is the best reward this project could ask for
 
-> 💡 Want to use HermesPet inside your company, or customize it as your branded macOS AI tool? Email me: [basionwang@gmail.com](mailto:basionwang@gmail.com)
+> 🪟 The **Windows early-access build** is developed by just me right now — limited bandwidth, still polishing, so please bear with the rough edges 🙏 Got issues or ideas? Add me on WeChat: `fastqingshan`
+>
+> 💡 Want to use HermesPet inside your company, or customize it as your branded AI tool? Email me: [basionwang@gmail.com](mailto:basionwang@gmail.com)
 
 ---
 
